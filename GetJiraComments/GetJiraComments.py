@@ -18,29 +18,32 @@ projects = jira.projects()
 
 # Sort available project keys, then return the second, third, and fourth keys.
 keys = sorted([project.key for project in projects])[2:5]
-
+issues = jira.search_issues('assignee = sergey.zhurbenko AND updated >= startOfDay(-1d) ORDER BY updated ASC')
+#print issues
 # Get an issue.
-issue = jira.issue('SOLO-764')
-print issue.fields.project.key             # 'JRA'
-print issue.fields.issuetype.name          # 'New Feature'
-print issue.fields.reporter.displayName    # 'Mike Cannon-Brookes [Atlassian]'
-all_comments=issue.fields.comment.comments
+for issueid in issues:
+    issue = jira.issue(issueid.id)
+    print issue.key                            # 'JRA'
+    print issue.fields.issuetype.name          # 'New Feature'
+    print issue.fields.reporter.displayName    # 'Mike Cannon-Brookes [Atlassian]'
+    #all_comments=issue.fields.comment.comments
 
-# Find all comments made by solomoto on this issue.
-solo_comments = [comment for comment in issue.fields.comment.comments
+    # Find all comments made by solomoto on this issue.
+    solo_comments = [comment for comment in issue.fields.comment.comments
                 if re.search(r'@solomoto.com$', comment.author.emailAddress)]
 
-worklogs = jira.worklogs(issue.key)
+    worklogs = jira.worklogs(issue.key)
 
-for comment in solo_comments:
-    commenttext = jira.comment('SOLO-764', comment)
-    print commenttext.body
-    pass
+    for comment in solo_comments:
+        commenttext = jira.comment(issueid.id, comment)
+        print commenttext.body
+        pass
 
-for worklog in worklogs:
-    text = jira.worklog('SOLO-764', worklog)
-    rawtext = text.comment
-    print rawtext
+    for worklog in worklogs:
+        text = jira.worklog(issueid.id, worklog)
+        rawtext = text.comment
+        print rawtext
+        pass
     pass
 #comment = jira.comment('SOLO-764', '16535')
 #print comment.body
