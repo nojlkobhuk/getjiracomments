@@ -30,11 +30,18 @@ all_comments=issue.fields.comment.comments
 solo_comments = [comment for comment in issue.fields.comment.comments
                 if re.search(r'@solomoto.com$', comment.author.emailAddress)]
 
+worklogs = jira.worklogs(issue.key)
+
 for comment in solo_comments:
-    text = jira.comment('SOLO-764', comment)
-    print text.body
+    commenttext = jira.comment('SOLO-764', comment)
+    print commenttext.body
     pass
 
+for worklog in worklogs:
+    text = jira.worklog('SOLO-764', worklog)
+    rawtext = text.comment
+    print rawtext
+    pass
 #comment = jira.comment('SOLO-764', '16535')
 #print comment.body
 # Add a comment to the issue.
