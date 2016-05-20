@@ -24,11 +24,18 @@ issue = jira.issue('SOLO-764')
 print issue.fields.project.key             # 'JRA'
 print issue.fields.issuetype.name          # 'New Feature'
 print issue.fields.reporter.displayName    # 'Mike Cannon-Brookes [Atlassian]'
-print issue.fields.comment.comments
+all_comments=issue.fields.comment.comments
 
 # Find all comments made by solomoto on this issue.
 solo_comments = [comment for comment in issue.fields.comment.comments
                 if re.search(r'@solomoto.com$', comment.author.emailAddress)]
 
+for comment in solo_comments:
+    text = jira.comment('SOLO-764', comment)
+    print text.body
+    pass
+
+#comment = jira.comment('SOLO-764', '16535')
+#print comment.body
 # Add a comment to the issue.
 #jira.add_comment(issue, 'Comment text')

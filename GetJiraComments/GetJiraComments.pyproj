@@ -12,6 +12,8 @@
     <OutputPath>.</OutputPath>
     <Name>GetJiraComments</Name>
     <RootNamespace>GetJiraComments</RootNamespace>
+    <InterpreterId>{69d484bb-22f3-4775-9a4e-b278761f16e7}</InterpreterId>
+    <InterpreterVersion>2.7</InterpreterVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
@@ -23,6 +25,19 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="GetJiraComments.py" />
+  </ItemGroup>
+  <ItemGroup>
+    <Interpreter Include="jiraenv\">
+      <Id>{69d484bb-22f3-4775-9a4e-b278761f16e7}</Id>
+      <BaseInterpreter>{9a7a9026-48c1-4688-9d5d-e5699d47d074}</BaseInterpreter>
+      <Version>2.7</Version>
+      <Description>jiraenv (Python 64-bit 2.7)</Description>
+      <InterpreterPath>Scripts\python.exe</InterpreterPath>
+      <WindowsInterpreterPath>Scripts\pythonw.exe</WindowsInterpreterPath>
+      <LibraryPath>Lib\</LibraryPath>
+      <PathEnvironmentVariable>PYTHONPATH</PathEnvironmentVariable>
+      <Architecture>Amd64</Architecture>
+    </Interpreter>
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
