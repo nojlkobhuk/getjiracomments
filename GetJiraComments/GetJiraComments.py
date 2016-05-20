@@ -1,10 +1,38 @@
 # This script shows how to use the client in anonymous mode
 # against jira.atlassian.com.
 import re
+import time
+import random
 import urllib3.contrib.pyopenssl
 urllib3.contrib.pyopenssl.inject_into_urllib3()
 from jira import JIRA
+from slackclient import SlackClient
 
+token = "xoxb-44694863140-7J4o134qrs8C9DQpRDq7q8Zx"      # found at https://api.slack.com/web#authentication
+client = SlackClient(token)
+print client.api_call("api.test")
+#print sc.api_call("channels.info", channel="#datadog")
+print client.api_call(
+    "chat.postMessage", channel="#dailyreports", text="I am here!",
+    username='dailyreporter', icon_emoji=':hankey:'
+)
+if client.rtm_connect():
+    while True:
+        last_read = client.rtm_read()
+        if last_read:
+            try:
+                parsed = last_read[0]['text']
+                #reply to channel message was found in.
+                message_channel = last_read[0]['channel']
+                userid = last_read[0]['user']                
+                if parsed and 'food' in parsed:
+                    userinfo = client.api_call('users.info', user=userid)
+                    email = userinfo['user']['profile']['email']
+                    choice = random.choice(['hamburger', 'pizza'])
+                    client.rtm_send_message(message_channel,'Today you will send to %s.' % email)
+            except:
+                pass
+        time.sleep(1)
 
 # By default, the client will connect to a JIRA instance started from the Atlassian Plugin SDK
 # (see https://developer.atlassian.com/display/DOCS/Installing+the+Atlassian+Plugin+SDK for details).
@@ -30,7 +58,7 @@ for issueid in issues:
 
     # Find all comments made by solomoto on this issue.
     solo_comments = [comment for comment in issue.fields.comment.comments
-                if re.search(r'@solomoto.com$', comment.author.emailAddress)]
+                if re.search(r'sergey.zhurbenko@solomoto.com$', comment.author.emailAddress)]
 
     worklogs = jira.worklogs(issue.key)
 
