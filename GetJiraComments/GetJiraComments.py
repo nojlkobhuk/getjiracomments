@@ -29,7 +29,7 @@ if client.rtm_connect():
                     userinfo = client.api_call('users.info', user=userid)
                     email = userinfo['user']['profile']['email']
                     choice = random.choice(['hamburger', 'pizza'])
-                    client.rtm_send_message(message_channel,'Today you will send to %s.' % email)
+                    client.rtm_send_message(message_channel,'%s sent to %s.' % (choice,email))
             except:
                 pass
         time.sleep(1)
