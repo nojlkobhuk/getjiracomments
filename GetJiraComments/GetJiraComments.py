@@ -26,7 +26,7 @@ def jiraReport(USER):
     issues = jira.search_issues(search)
     #print issues
     # Get an issue.
-    comtext2 = ""
+    result = ""
     for issueid in issues:
         issue = jira.issue(issueid.id)
         print issue.key                            # 'JRA'
@@ -45,19 +45,17 @@ def jiraReport(USER):
             commenttext = jira.comment(issueid.id, comment)
             #comtext = unicodedata.normalize('NFKD', commenttext.body).encode('ascii','ignore')
             comtext = "\r\n".join(["%s","%s"]) % (comtext,commenttext.body)            
-            #alltext=+comtext
             pass
         worktext = "My worklog:"
         for worklog in worklogs:
             worklogtext = jira.worklog(issueid.id, worklog)
             #print worklogtext.comment
             worktext = "\r\n".join(["%s","%s"]) % (worktext,worklogtext.comment)
-            #alltext=+rawtext
             pass
-        comtext2 = "\r\n".join(["%s","%s %s","[%s]","%s","%s","\r\n"]) % (comtext2,issue.key,issue.fields.summary,issue.fields.issuetype.name,comtext,worktext)
+        result = "\r\n".join(["%s","%s %s","[%s]","%s","%s","\r\n"]) % (result,issue.key,issue.fields.summary,issue.fields.issuetype.name,comtext,worktext)
         pass
         
-    return comtext2
+    return result
 
 def sendMail(FROM,TO,SUBJECT,TEXT,SERVER):
     import smtplib
@@ -76,9 +74,6 @@ def sendMail(FROM,TO,SUBJECT,TEXT,SERVER):
     server.login('sergey.zhurbenko@solomoto.com', 'Asdqzec2012!?')
     server.sendmail(FROM, TO, msg)
     server.quit()
-
-report = jiraReport('sergey.zhurbenko')
-sendMail ('sergey.zhurbenko@solomoto.com','sergey.zhurbenko@solomoto.com','Daily Report',report,'smtp.gmail.com:587')
 
 token = "xoxb-44694863140-7J4o134qrs8C9DQpRDq7q8Zx"      # found at https://api.slack.com/web#authentication
 client = SlackClient(token)
@@ -100,8 +95,12 @@ if client.rtm_connect():
                 if parsed and 'food' in parsed:
                     userinfo = client.api_call('users.info', user=userid)
                     email = userinfo['user']['profile']['email']
-                    choice = random.choice(['hamburger', 'pizza'])
-                    client.rtm_send_message(message_channel,'%s sent to %s.' % (choice,email))
+                    choice = random.choice(['Your epic report', 'Hernya', 'Magic', 'Black mamba', 'Great report', 'Productivity'])
+                    verbs = random.choice(['sent', 'happened', 'realized', ':hankey:'])
+                    username = email[:-13]                    
+                    report = jiraReport(username)
+                    sendMail ('sergey.zhurbenko@solomoto.com',email,'Daily Report',report,'smtp.gmail.com:587')
+                    client.rtm_send_message(message_channel,'%s %s to %s.' % (choice,verbs,email))
             except:
                 pass
         time.sleep(1)
