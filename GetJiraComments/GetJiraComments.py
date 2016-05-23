@@ -10,7 +10,7 @@ urllib3.contrib.pyopenssl.inject_into_urllib3()
 from jira import JIRA
 from slackclient import SlackClient
 
-def jiraReport(USER):
+def jiraReport(USER,report_date):
     # By default, the client will connect to a JIRA instance started from the Atlassian Plugin SDK
     # (see https://developer.atlassian.com/display/DOCS/Installing+the+Atlassian+Plugin+SDK for details).
     # Override this with the options parameter.
@@ -22,8 +22,13 @@ def jiraReport(USER):
     projects = jira.projects()
 
     # Sort available project keys, then return the second, third, and fourth keys.
-    keys = sorted([project.key for project in projects])[2:5]
-    search = 'assignee = %s AND updated >= startOfDay(-1d) ORDER BY updated ASC' % USER
+    #keys = sorted([project.key for project in projects])[2:5]
+    if report_date == 'today':
+        search = 'assignee = %s AND updated >= startOfDay(-1d) ORDER BY updated ASC' % USER
+        now = datetime.now()
+    else:
+        now = datetime.strptime(report_date,"%d/%m/%Y")
+        search = 'assignee = %s AND (updated >= "%s/%s/%s" AND updated < "%s/%s/%s") ORDER BY updated ASC' % (USER,now.year,now.month,now.day,now.year,now.month,now.day + 1)
     issues = jira.search_issues(search)
     #print issues
     # Get an issue.
@@ -31,7 +36,7 @@ def jiraReport(USER):
     for issueid in issues:
         issue = jira.issue(issueid.id)
         print issue.key                            # 'JRA'
-        print issue.fields.summary                 # 'JRA'
+        print issue.fields.summary                 # 'My very serious task'
         print issue.fields.issuetype.name          # 'New Feature'
         print issue.fields.reporter.displayName    # 'Mike Cannon-Brookes [Atlassian]'
         #all_comments=issue.fields.comment.comments
@@ -45,6 +50,9 @@ def jiraReport(USER):
         for comment in solo_comments:
             commenttext = jira.comment(issueid.id, comment)
             #comtext = unicodedata.normalize('NFKD', commenttext.body).encode('ascii','ignore')
+            #date = commenttext.created.encode('ascii')
+            #if date > now:
+            #    print "Halaso"
             comtext = "\r\n".join(["%s","\t%s"]) % (comtext,commenttext.body)            
             pass
         worktext = ""
@@ -80,10 +88,10 @@ token = "xoxb-44694863140-kyMCRyVHrlqOdbQguUgDxawc"      # found at https://api.
 client = SlackClient(token)
 print client.api_call("api.test")
 #print sc.api_call("channels.info", channel="#datadog")
-print client.api_call(
-    "chat.postMessage", channel="#dailyreports", text="I am here!",
-    username='dailyreporter', icon_emoji=':hankey:'
-)
+#print client.api_call(
+#    "chat.postMessage", channel="#dailyreports", text="I am here!",
+#    username='dailyreporter', icon_emoji=':hankey:'
+#)
 if client.rtm_connect():
     while True:
         last_read = client.rtm_read()
@@ -93,16 +101,22 @@ if client.rtm_connect():
                 #reply to channel message was found in.
                 message_channel = last_read[0]['channel']
                 userid = last_read[0]['user']                
-                if parsed and 'food' in parsed:
+                if parsed and 'report' in parsed:
                     userinfo = client.api_call('users.info', user=userid)
                     email = userinfo['user']['profile']['email']
                     fullname = userinfo['user']['real_name']
                     choice = random.choice(['Your epic report', 'Hernya', 'Magic', 'Black mamba', 'Great report', 'Productivity'])
                     verbs = random.choice(['sent', 'happened', 'realized', ':hankey:'])
-                    username = email[:-13]                    
-                    report = jiraReport(username)
-                    now = datetime.now()
-                    subject = '%s daily report for %s.%s.%s' % (fullname,now.day,now.month,now.year)
+                    username = email[:-13]                  
+                    if 'today' in parsed:
+                        report = jiraReport(username,'today')
+                        now = datetime.now()
+                        subject = '%s daily report for %s.%s.%s' % (fullname,now.day,now.month,now.year)
+                    else:
+                        match = re.search(r'(\d+/\d+/\d+)',parsed)
+                        date = match.group(1).encode('ascii')  
+                        report = jiraReport(username,date)
+                        subject = '%s daily report for %s' % (fullname,date)
                     sendMail ('sergey.zhurbenko@solomoto.com',email,subject,'Activities:\r\n' + report,'smtp.gmail.com:587')
                     client.rtm_send_message(message_channel,'%s %s to %s.' % (choice,verbs,email))
             except:
