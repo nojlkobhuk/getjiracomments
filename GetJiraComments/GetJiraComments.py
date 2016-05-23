@@ -4,6 +4,7 @@ import re
 import time
 import random
 import unicodedata
+from datetime import datetime
 import urllib3.contrib.pyopenssl
 urllib3.contrib.pyopenssl.inject_into_urllib3()
 from jira import JIRA
@@ -40,19 +41,19 @@ def jiraReport(USER):
                     if re.search(USER, comment.author.emailAddress)]
 
         worklogs = jira.worklogs(issue.key)
-        comtext = "My comments:"
+        comtext = "comments:"
         for comment in solo_comments:
             commenttext = jira.comment(issueid.id, comment)
             #comtext = unicodedata.normalize('NFKD', commenttext.body).encode('ascii','ignore')
-            comtext = "\r\n".join(["%s","%s"]) % (comtext,commenttext.body)            
+            comtext = "\r\n".join(["%s","\t%s"]) % (comtext,commenttext.body)            
             pass
-        worktext = "My worklog:"
+        worktext = ""
         for worklog in worklogs:
             worklogtext = jira.worklog(issueid.id, worklog)
             #print worklogtext.comment
-            worktext = "\r\n".join(["%s","%s"]) % (worktext,worklogtext.comment)
+            worktext = "\r\n".join(["%s","\tworklog: %s\r\n\t%s"]) % (worktext,worklogtext.timeSpent,worklogtext.comment)
             pass
-        result = "\r\n".join(["%s","%s %s","[%s]","%s","%s","\r\n"]) % (result,issue.key,issue.fields.summary,issue.fields.issuetype.name,comtext,worktext)
+        result = "\r\n".join(["%s","[%s] %s %s:","\t%s","\t%s","\r\n"]) % (result,issue.fields.issuetype.name,issue.key,issue.fields.summary,comtext,worktext)
         pass
         
     return result
@@ -75,7 +76,7 @@ def sendMail(FROM,TO,SUBJECT,TEXT,SERVER):
     server.sendmail(FROM, TO, msg)
     server.quit()
 
-token = "xoxb-44694863140-7J4o134qrs8C9DQpRDq7q8Zx"      # found at https://api.slack.com/web#authentication
+token = "xoxb-44694863140-kyMCRyVHrlqOdbQguUgDxawc"      # found at https://api.slack.com/web#authentication
 client = SlackClient(token)
 print client.api_call("api.test")
 #print sc.api_call("channels.info", channel="#datadog")
@@ -95,11 +96,14 @@ if client.rtm_connect():
                 if parsed and 'food' in parsed:
                     userinfo = client.api_call('users.info', user=userid)
                     email = userinfo['user']['profile']['email']
+                    fullname = userinfo['user']['real_name']
                     choice = random.choice(['Your epic report', 'Hernya', 'Magic', 'Black mamba', 'Great report', 'Productivity'])
                     verbs = random.choice(['sent', 'happened', 'realized', ':hankey:'])
                     username = email[:-13]                    
                     report = jiraReport(username)
-                    sendMail ('sergey.zhurbenko@solomoto.com',email,'Daily Report',report,'smtp.gmail.com:587')
+                    now = datetime.now()
+                    subject = '%s daily report for %s.%s.%s' % (fullname,now.day,now.month,now.year)
+                    sendMail ('sergey.zhurbenko@solomoto.com',email,subject,'Activities:\r\n' + report,'smtp.gmail.com:587')
                     client.rtm_send_message(message_channel,'%s %s to %s.' % (choice,verbs,email))
             except:
                 pass
