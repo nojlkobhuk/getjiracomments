@@ -4,7 +4,11 @@ import re
 import time
 import random
 import unicodedata
-from datetime import datetime
+import datetime
+import time
+import textwrap
+#from datetime import datetime
+#from datetime import timedelta
 import urllib3.contrib.pyopenssl
 urllib3.contrib.pyopenssl.inject_into_urllib3()
 from jira import JIRA
@@ -24,11 +28,13 @@ def jiraReport(USER,report_date):
     # Sort available project keys, then return the second, third, and fourth keys.
     #keys = sorted([project.key for project in projects])[2:5]
     if report_date == 'today':
-        search = 'assignee = %s AND updated >= startOfDay(-1d) ORDER BY updated ASC' % USER
-        now = datetime.now()
+        now = datetime.datetime.now() - datetime.timedelta(hours=12)
+        nextday = datetime.datetime.now() + datetime.timedelta(hours=12)
+        search = 'worklogAuthor = %s AND worklogDate = "%s/%s/%s" ORDER BY updated ASC' % (USER,now.year,now.month,now.day)
     else:
-        now = datetime.strptime(report_date,"%d/%m/%Y")
-        search = 'assignee = %s AND (updated >= "%s/%s/%s" AND updated < "%s/%s/%s") ORDER BY updated ASC' % (USER,now.year,now.month,now.day,now.year,now.month,now.day + 1)
+        now = datetime.datetime.strptime(report_date,"%d.%m.%Y")
+        nextday = datetime.datetime(now.year,now.month,now.day + 1)
+        search = 'worklogAuthor = %s AND worklogDate = "%s/%s/%s" ORDER BY updated ASC' % (USER,now.year,now.month,now.day)
     issues = jira.search_issues(search)
     #print issues
     # Get an issue.
@@ -43,25 +49,27 @@ def jiraReport(USER,report_date):
 
         # Find all comments made by solomoto on this issue.
         solo_comments = [comment for comment in issue.fields.comment.comments
-                    if re.search(USER, comment.author.emailAddress)]
+                    if re.search(USER, comment.author.name)]
 
         worklogs = jira.worklogs(issue.key)
-        comtext = "comments:"
+        comtext = ""
         for comment in solo_comments:
             commenttext = jira.comment(issueid.id, comment)
-            #comtext = unicodedata.normalize('NFKD', commenttext.body).encode('ascii','ignore')
-            #date = commenttext.created.encode('ascii')
-            #if date > now:
-            #    print "Halaso"
-            comtext = "\r\n".join(["%s","\t%s"]) % (comtext,commenttext.body)            
+            commenttime = time.strptime(commenttext.created[:19], "%Y-%m-%dT%H:%M:%S")
+            commenttime = datetime.datetime(commenttime[0], commenttime[1], commenttime[2], commenttime[3], commenttime[4])
+            if commenttime >= now and commenttime < nextday:
+                comtext = "\r\n".join(["%s","\tcomments: \r\n\t%s"]) % (comtext,commenttext.body)            
             pass
         worktext = ""
         for worklog in worklogs:
             worklogtext = jira.worklog(issueid.id, worklog)
-            #print worklogtext.comment
-            worktext = "\r\n".join(["%s","\tworklog: %s\r\n\t%s"]) % (worktext,worklogtext.timeSpent,worklogtext.comment)
+            worklogtime = commenttime = time.strptime(worklogtext.created[:19], "%Y-%m-%dT%H:%M:%S")
+            worklogtime = datetime.datetime(worklogtime[0], worklogtime[1], worklogtime[2], worklogtime[3], worklogtime[4])
+            if worklogtime >= now and worklogtime < nextday:
+                worktext = "\r\n".join(["%s","\tworklog: %s\r\n\t%s"]) % (worktext,worklogtext.timeSpent,worklogtext.comment)
             pass
-        result = "\r\n".join(["%s","[%s] %s %s:","\t%s","\t%s","\r\n"]) % (result,issue.fields.issuetype.name,issue.key,issue.fields.summary,comtext,worktext)
+        if worktext > "" or comtext > "":
+            result = "\r\n".join(["%s","[%s] %s %s:","\t%s","\t%s","\r\n"]) % (result,issue.fields.issuetype.name,issue.key,issue.fields.summary,worktext,comtext)
         pass
         
     return result
@@ -80,7 +88,7 @@ def sendMail(FROM,TO,SUBJECT,TEXT,SERVER):
     server = smtplib.SMTP(SERVER)
     server.ehlo()
     server.starttls()
-    server.login('sergey.zhurbenko@solomoto.com', 'Asdqzec2012!?')
+    server.login('admin@solomoto.com', 'Asdqzec2012!?')
     server.sendmail(FROM, TO, msg)
     server.quit()
 
@@ -101,23 +109,27 @@ if client.rtm_connect():
                 #reply to channel message was found in.
                 message_channel = last_read[0]['channel']
                 userid = last_read[0]['user']                
-                if parsed and 'report' in parsed:
+                if parsed and ('report' in parsed or parsed == 'dr'):
                     userinfo = client.api_call('users.info', user=userid)
                     email = userinfo['user']['profile']['email']
                     fullname = userinfo['user']['real_name']
                     choice = random.choice(['Your epic report', 'Hernya', 'Magic', 'Black mamba', 'Great report', 'Productivity'])
                     verbs = random.choice(['sent', 'happened', 'realized', ':hankey:'])
                     username = email[:-13]                  
-                    if 'today' in parsed:
+                    if 'today' in parsed or parsed == 'dr':
                         report = jiraReport(username,'today')
-                        now = datetime.now()
+                        now = datetime.datetime.now()
                         subject = '%s daily report for %s.%s.%s' % (fullname,now.day,now.month,now.year)
                     else:
-                        match = re.search(r'(\d+/\d+/\d+)',parsed)
+                        match = re.search(r'(\d+.\d+.\d+)',parsed)
                         date = match.group(1).encode('ascii')  
                         report = jiraReport(username,date)
                         subject = '%s daily report for %s' % (fullname,date)
-                    sendMail ('sergey.zhurbenko@solomoto.com',email,subject,'Activities:\r\n' + report,'smtp.gmail.com:587')
+                    if 'message' in parsed:
+                        report = report + "\r\nAdditional message:\r\n\t" + parsed[parsed.find("message")+8:]
+                    if 'to all' in parsed:
+                        email = 'ru_dev_team@solomoto.com'
+                    sendMail ('admin@solomoto.com',email,subject,'Activities:\r\n' + report,'smtp.gmail.com:587')
                     client.rtm_send_message(message_channel,'%s %s to %s.' % (choice,verbs,email))
             except:
                 pass
