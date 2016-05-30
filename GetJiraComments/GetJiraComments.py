@@ -109,14 +109,14 @@ if client.rtm_connect():
                 #reply to channel message was found in.
                 message_channel = last_read[0]['channel']
                 userid = last_read[0]['user']                
-                if parsed and ('report' in parsed or parsed == 'dr'):
+                if parsed and ('report' in parsed or parsed == 'dr' or parsed == 'dr to all'):
                     userinfo = client.api_call('users.info', user=userid)
                     email = userinfo['user']['profile']['email']
                     fullname = userinfo['user']['real_name']
                     choice = random.choice(['Your epic report', 'Hernya', 'Magic', 'Black mamba', 'Great report', 'Productivity'])
                     verbs = random.choice(['sent', 'happened', 'realized', ':hankey:'])
                     username = email[:-13]                  
-                    if 'today' in parsed or parsed == 'dr':
+                    if 'today' in parsed or parsed == 'dr' or parsed == 'dr to all':
                         report = jiraReport(username,'today')
                         now = datetime.datetime.now()
                         subject = '%s daily report for %s.%s.%s' % (fullname,now.day,now.month,now.year)
