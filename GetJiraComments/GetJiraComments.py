@@ -54,19 +54,19 @@ def jiraReport(USER,report_date):
         worklogs = jira.worklogs(issue.key)
         comtext = ""
         for comment in solo_comments:
-            commenttext = jira.comment(issueid.id, comment)
-            commenttime = time.strptime(commenttext.created[:19], "%Y-%m-%dT%H:%M:%S")
-            commenttime = datetime.datetime(commenttime[0], commenttime[1], commenttime[2], commenttime[3], commenttime[4])
-            if commenttime >= now and commenttime < nextday:
-                comtext = "\r\n".join(["%s","\tcomments: \r\n\t%s"]) % (comtext,commenttext.body)            
+            if comment.author.name == USER:
+                commenttime = time.strptime(comment.created[:19], "%Y-%m-%dT%H:%M:%S")
+                commenttime = datetime.datetime(commenttime[0], commenttime[1], commenttime[2], commenttime[3], commenttime[4])
+                if commenttime >= now and commenttime < nextday:
+                    comtext = "\r\n".join(["%s","\tcomments: \r\n\t%s"]) % (comtext,comment.body)            
             pass
         worktext = ""
         for worklog in worklogs:
-            worklogtext = jira.worklog(issueid.id, worklog)
-            worklogtime = commenttime = time.strptime(worklogtext.created[:19], "%Y-%m-%dT%H:%M:%S")
-            worklogtime = datetime.datetime(worklogtime[0], worklogtime[1], worklogtime[2], worklogtime[3], worklogtime[4])
-            if worklogtime >= now and worklogtime < nextday:
-                worktext = "\r\n".join(["%s","\tworklog: %s\r\n\t%s"]) % (worktext,worklogtext.timeSpent,worklogtext.comment)
+            if worklog.author.name == USER:
+                worklogtime = time.strptime(worklog.created[:19], "%Y-%m-%dT%H:%M:%S")
+                worklogtime = datetime.datetime(worklogtime[0], worklogtime[1], worklogtime[2], worklogtime[3], worklogtime[4])
+                if worklogtime >= now and worklogtime < nextday:
+                    worktext = "\r\n".join(["%s","\tworklog: %s\r\n\t%s"]) % (worktext,worklog.timeSpent,worklog.comment)
             pass
         if worktext > "" or comtext > "":
             result = "\r\n".join(["%s","[%s] %s %s:","\t%s","\t%s","\r\n"]) % (result,issue.fields.issuetype.name,issue.key,issue.fields.summary,worktext,comtext)
@@ -96,10 +96,10 @@ token = "xoxb-44694863140-kyMCRyVHrlqOdbQguUgDxawc"      # found at https://api.
 client = SlackClient(token)
 print client.api_call("api.test")
 #print sc.api_call("channels.info", channel="#datadog")
-#print client.api_call(
-#    "chat.postMessage", channel="#dailyreports", text="I am here!",
-#    username='dailyreporter', icon_emoji=':hankey:'
-#)
+print client.api_call(
+    "chat.postMessage", channel="#dailyreports", text="I am here!",
+    username='dailyreporter', icon_emoji=':hankey:'
+)
 if client.rtm_connect():
     while True:
         last_read = client.rtm_read()
