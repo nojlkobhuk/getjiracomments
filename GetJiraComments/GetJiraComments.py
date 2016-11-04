@@ -7,8 +7,6 @@ import unicodedata
 import datetime
 import time
 import textwrap
-#from datetime import datetime
-#from datetime import timedelta
 import urllib3.contrib.pyopenssl
 urllib3.contrib.pyopenssl.inject_into_urllib3()
 from jira import JIRA
