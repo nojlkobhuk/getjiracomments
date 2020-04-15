@@ -18,7 +18,7 @@ def jiraReport(USER,report_date):
     # Override this with the options parameter.
     jira_options = {
         'server': 'https://solomoto.atlassian.net'}
-    jira = JIRA(options=jira_options, basic_auth=('sergey.zhurbenko', 'Asdqzec2012!?'))
+    jira = JIRA(options=jira_options, basic_auth=('sergey.zhurbenko', 'zxzxzx'))
 
     # Get all projects viewable by anonymous users.
     projects = jira.projects()
@@ -86,7 +86,7 @@ def sendMail(FROM,TO,SUBJECT,TEXT,SERVER):
     server = smtplib.SMTP(SERVER)
     server.ehlo()
     server.starttls()
-    server.login('admin@solomoto.com', 'Asdqzec2012!?')
+    server.login('admin@solomoto.com', 'zxxxzxzx')
     server.sendmail(FROM, TO, msg)
     server.quit()
 
